@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ManutenPão — Gestão de Comodato e Manutenção</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#1E3A5F" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ManutenPão" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="icon" type="image/png" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Sidebar / Nav -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">🍞</div>
+      <div class="brand-text">
+        <strong>ManutenPão</strong>
+        <span>Comodato &amp; Manutenção</span>
+      </div>
+    </div>
+    <nav class="nav">
+      <button class="nav-item active" data-view="dashboard">
+        <span class="ni-ico">📊</span> Dashboard
+      </button>
+      <button class="nav-item" data-view="equipamentos">
+        <span class="ni-ico">📦</span> Equipamentos
+      </button>
+      <button class="nav-item" data-view="os">
+        <span class="ni-ico">🛠️</span> Ordens de Serviço
+      </button>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="profile-box">
+        <label for="profileSelect">Perfil ativo</label>
+        <select id="profileSelect" class="profile-select"></select>
+        <span class="profile-hint" id="profileHint">Acesso total — gestão e distribuição</span>
+      </div>
+    </div>
+  </aside>
+
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
+      <div class="topbar-title" id="viewTitle">Dashboard executivo</div>
+      <div class="topbar-actions">
+        <input type="search" id="globalSearch" class="global-search" placeholder="Buscar equipamento ou OS..." />
+        <button class="btn btn-primary" id="quickNewOs">+ Nova OS</button>
+      </div>
+    </header>
+
+    <main class="content">
+      <!-- DASHBOARD -->
+      <section class="view" id="view-dashboard">
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-alloc">
+            <div class="kpi-ico">📍</div>
+            <div class="kpi-data"><span class="kpi-num" id="kpiAlloc">0</span><span class="kpi-label">Alocados</span></div>
+          </div>
+          <div class="kpi-card kpi-avail">
+            <div class="kpi-ico">✅</div>
+            <div class="kpi-data"><span class="kpi-num" id="kpiAvail">0</span><span class="kpi-label">Disponíveis</span></div>
+          </div>
+          <div class="kpi-card kpi-maint">
+            <div class="kpi-ico">🔧</div>
+            <div class="kpi-data"><span class="kpi-num" id="kpiMaint">0</span><span class="kpi-label">Em Manutenção</span></div>
+          </div>
+          <div class="kpi-card kpi-os">
+            <div class="kpi-ico">🛠️</div>
+            <div class="kpi-data"><span class="kpi-num" id="kpiOs">0</span><span class="kpi-label">OS Abertas</span></div>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="card chart-card">
+            <h3>Distribuição de Equipamentos</h3>
+            <div class="chart-wrap"><canvas id="chartStatus"></canvas></div>
+          </div>
+          <div class="card chart-card">
+            <h3>OS por Status</h3>
+            <div class="chart-wrap"><canvas id="chartOs"></canvas></div>
+          </div>
+          <div class="card chart-card wide">
+            <h3>OS por Técnico</h3>
+            <div class="chart-wrap"><canvas id="chartTech"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>Ordens de Serviço recentes</h3>
+            <button class="btn btn-ghost" data-goto="os">Ver todas →</button>
+          </div>
+          <div class="table-scroll">
+            <table class="data-table" id="recentOsTable">
+              <thead><tr><th>OS</th><th>Equipamento</th><th>Prioridade</th><th>Técnico</th><th>Status</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- EQUIPAMENTOS -->
+      <section class="view hidden" id="view-equipamentos">
+        <div class="view-head">
+          <div class="filters">
+            <select id="eqStatusFilter" class="select">
+              <option value="">Todos os status</option>
+              <option value="Alocado">Alocado</option>
+              <option value="Disponível">Disponível</option>
+              <option value="Manutenção">Manutenção</option>
+            </select>
+            <input type="search" id="eqSearch" class="select" placeholder="Buscar por nº, modelo ou local..." />
+          </div>
+          <button class="btn btn-primary" id="newEqBtn">+ Novo Equipamento</button>
+        </div>
+        <div class="eq-grid" id="eqGrid"></div>
+      </section>
+
+      <!-- OS (Kanban) -->
+      <section class="view hidden" id="view-os">
+        <div class="view-head">
+          <div class="filters">
+            <select id="osClientFilter" class="select"><option value="">Todos os clientes</option></select>
+            <select id="osTechFilter" class="select"><option value="">Todos os mecânicos</option></select>
+            <input type="date" id="osDateFilter" class="select" />
+          </div>
+          <button class="btn btn-primary" id="newOsBtn">+ Nova OS</button>
+        </div>
+        <div class="kanban" id="kanban">
+          <div class="kb-col" data-col="Aberta">
+            <div class="kb-col-head">Aberta <span class="kb-count">0</span></div>
+            <div class="kb-list" data-status="Aberta"></div>
+          </div>
+          <div class="kb-col" data-col="Em andamento">
+            <div class="kb-col-head">Em andamento <span class="kb-count">0</span></div>
+            <div class="kb-list" data-status="Em andamento"></div>
+          </div>
+          <div class="kb-col" data-col="Concluída">
+            <div class="kb-col-head">Concluída <span class="kb-count">0</span></div>
+            <div class="kb-list" data-status="Concluída"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODALS -->
+  <div class="modal-overlay hidden" id="eqModal">
+    <div class="modal">
+      <div class="modal-head"><h3 id="eqModalTitle">Cadastro de Equipamento</h3><button class="modal-close" data-close>✕</button></div>
+      <form id="eqForm" class="form">
+        <input type="hidden" id="eqId" />
+        <div class="form-row">
+          <label>Nº de Patrimônio<input required id="eqTag" placeholder="EQ-0001" /></label>
+          <label>Modelo<input required id="eqModel" placeholder="Forno turbo 8 esteiras" /></label>
+        </div>
+        <div class="form-row">
+          <label>Tipo
+            <select id="eqType">
+              <option>Forno</option><option>Câmara fria</option><option>Modeladora</option>
+              <option>Fermentadora</option><option>Divisora</option><option>Outro</option>
+            </select>
+          </label>
+          <label>Status
+            <select id="eqStatus"><option>Disponível</option><option>Alocado</option><option>Manutenção</option></select>
+          </label>
+        </div>
+        <div class="form-row">
+          <label>Cliente / Local<input id="eqClient" placeholder="Padaria Pão Quente — SP" /></label>
+          <label>Cidade / UF<input id="eqCity" placeholder="São Paulo / SP" /></label>
+        </div>
+        <label>Observações<textarea id="eqNotes" rows="2" placeholder="Detalhes do comodato..."></textarea></label>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" data-close>Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="osModal">
+    <div class="modal">
+      <div class="modal-head"><h3 id="osModalTitle">Abertura de Ordem de Serviço</h3><button class="modal-close" data-close>✕</button></div>
+      <form id="osForm" class="form">
+        <input type="hidden" id="osId" />
+        <div class="form-row">
+          <label>Cliente (base)<select id="osClient" required></select></label>
+          <label>Equipamento<select id="osEquip" required></select></label>
+        </div>
+        <div class="form-row">
+          <label>Prioridade
+            <select id="osPriority"><option>Baixa</option><option selected>Média</option><option>Alta</option><option>Crítica</option></select>
+          </label>
+          <label>Status
+            <select id="osStatus"><option>Aberta</option><option>Em andamento</option><option>Concluída</option></select>
+          </label>
+        </div>
+        <label>Mecânico atribuído <small class="lbl-hint">(opcional na abertura — distribuído pelo colaborador)</small>
+          <select id="osTech"></select>
+        </label>
+        <label>Descrição do problema<textarea id="osDesc" rows="3" required placeholder="Descreva o defeito ou a solicitação..."></textarea></label>
+        <label class="resolution-field hidden" id="osResolutionField">Baixa técnica / Solução aplicada<textarea id="osResolution" rows="2" placeholder="Descreva o serviço executado..."></textarea></label>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" data-close>Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar OS</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- OS Detail / Rastreabilidade -->
+  <div class="modal-overlay hidden" id="osDetailModal">
+    <div class="modal">
+      <div class="modal-head"><h3 id="osDetailTitle">OS</h3><button class="modal-close" data-close>✕</button></div>
+      <div id="osDetailBody" class="os-detail"></div>
+    </div>
+  </div>
+
+  <!-- Baixa técnica obrigatória ao concluir -->
+  <div class="modal-overlay hidden" id="baixaModal">
+    <div class="modal">
+      <div class="modal-head"><h3 id="baixaTitle">Baixa técnica</h3><button class="modal-close" data-close>✕</button></div>
+      <form id="baixaForm" class="form">
+        <input type="hidden" id="baixaOsId" />
+        <p class="baixa-note">Para concluir a OS é obrigatório registrar a <b>baixa técnica</b> (serviço executado), garantindo a rastreabilidade.</p>
+        <label>Solução aplicada / Serviço executado
+          <textarea id="baixaText" rows="4" required placeholder="Descreva o que foi feito para resolver a OS..."></textarea>
+        </label>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" data-close>Cancelar</button>
+          <button type="submit" class="btn btn-primary">Concluir OS</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () =>
+        navigator.serviceWorker.register("sw.js").catch(() => {}));
+    }
+  </script>
+</body>
+</html>
