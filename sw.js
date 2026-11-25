@@ -1,10 +1,10 @@
 // ManutenPão — Service Worker (cache offline do app shell)
-const CACHE = "manutenpao-v1";
+const CACHE = "manutenpao-v2";
 const CORE = [
   "./", "./index.html", "./styles.css", "./data.js", "./app.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-maskable-512.png",
-  "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+  "./vendor/chart.umd.min.js"
 ];
 
 self.addEventListener("install", (e) => {
